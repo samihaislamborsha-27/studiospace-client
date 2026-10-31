@@ -5,13 +5,12 @@ import { useState } from "react";
 import {
   Menu,
   X,
-  Search,
   Sun,
   Moon,
   UserRound,
   ArrowUpRight,
 } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/ThemeProvider";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -21,11 +20,7 @@ const navLinks = [
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-md">
@@ -99,7 +94,11 @@ export default function Navbar() {
             aria-label="Toggle theme"
             className="flex h-10 w-10 items-center justify-center rounded-full text-muted hover:bg-surface-muted"
           >
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            {theme === "dark" ? (
+              <Sun size={18} />
+            ) : (
+              <Moon size={18} />
+            )}
           </button>
 
           <button

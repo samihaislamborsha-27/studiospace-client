@@ -1,17 +1,16 @@
 ﻿import type { Metadata } from "next";
 import "./globals.css";
-import ThemeProvider from "@/components/ThemeProvider";
+
+import  ThemeProvider  from "@/components/ThemeProvider";
+import { AuthProvider } from "@/context/AuthProvider";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: {
-    default: "StudioSpace — Find Your Creative Space",
-    template: "%s | StudioSpace",
-  },
+  title: "StudioSpace | Find Your Creative Space",
   description:
-    "Discover and book inspiring creative studios for photography, filmmaking, podcasting, music, and more.",
+    "Discover inspiring creative studios and spaces for photography, music, podcasts, film, and more.",
 };
 
 export default function RootLayout({
@@ -21,20 +20,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="flex min-h-screen flex-col antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          <Navbar />
+      <body className="flex min-h-screen flex-col">
+        <ThemeProvider>
+          <AuthProvider>
+            <Navbar />
 
-          <main className="flex-1">{children}</main>
+            <main className="flex-1">{children}</main>
 
-          <Footer />
+            <Footer />
 
-          <Toaster position="top-right" richColors closeButton />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+            />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
