@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 
 const categories = [
-  "All spaces",
   "Photography",
   "Podcast",
   "Music",
@@ -18,10 +17,9 @@ const categories = [
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-background">
+    <section className="relative isolate overflow-hidden bg-background">
       <div className="mx-auto max-w-360 px-5 pb-16 pt-14 sm:px-8 sm:pb-20 sm:pt-20 lg:px-12 lg:pb-24 lg:pt-24">
         <div className="grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14">
-          {/* Left content */}
           <div className="relative z-10">
             <div className="mb-7 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
               <span className="h-px w-7 bg-accent" />
@@ -42,7 +40,6 @@ export default function HeroSection() {
               match, and get to work.
             </p>
 
-            {/* Search form */}
             <form
               action="/studios"
               method="GET"
@@ -67,8 +64,11 @@ export default function HeroSection() {
                       className="w-full min-w-0 bg-transparent py-1 text-sm font-medium text-foreground outline-none"
                     >
                       <option value="">All creative spaces</option>
-                      {categories.slice(1).map((category) => (
-                        <option key={category} value={category.toLowerCase()}>
+                      {categories.map((category) => (
+                        <option
+                          key={category}
+                          value={category.toLowerCase()}
+                        >
                           {category}
                         </option>
                       ))}
@@ -107,7 +107,6 @@ export default function HeroSection() {
               </div>
             </form>
 
-            {/* Supporting links */}
             <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
               <Link
                 href="/studios"
@@ -130,12 +129,11 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* Right visual */}
-          <div className="relative">
+          <div className="relative z-10">
             <div className="relative min-h-95 overflow-hidden rounded-3xl bg-surface-muted sm:min-h-125 lg:min-h-147.5">
               <div
                 role="img"
-                aria-label="Sunlit creative photography studio with professional equipment"
+                aria-label="Sunlit creative photography studio"
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage:
@@ -169,11 +167,10 @@ export default function HeroSection() {
               </div>
             </div>
 
-            <div className="absolute -bottom-5 left-5 right-5 z-0 h-20 rounded-2xl bg-accent/10 blur-2xl sm:left-10 sm:right-10" />
+            <div className="pointer-events-none absolute -bottom-5 left-5 right-5 -z-10 h-20 rounded-2xl bg-accent/10 blur-2xl sm:left-10 sm:right-10" />
           </div>
         </div>
 
-        {/* Bottom note */}
         <div className="mt-16 flex flex-col gap-4 border-t border-border pt-7 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">
             Made for the people who make things.

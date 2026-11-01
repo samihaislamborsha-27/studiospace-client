@@ -7,13 +7,13 @@ import StudioOwnerSection from "@/components/home/StudioOwnerSection";
 
 export default function Home() {
   return (
-    <>
+    <main className="flex flex-col">
       <HeroSection />
       <CategorySection />
       <HowItWorksSection />
       <FeaturedStudiosSection />
       <WhyStudioSpaceSection />
       <StudioOwnerSection />
-    </>
+    </main>
   );
 }

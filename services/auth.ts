@@ -1,5 +1,5 @@
 ﻿const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000"
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 ).replace(/\/+$/, "");
 
 export type AuthUser = {
@@ -23,7 +23,13 @@ export type RegisterData = {
   password: string;
 };
 
-async function parseResponse(response: Response) {
+type AuthResponse = {
+  success: boolean;
+  message: string;
+  user: AuthUser;
+};
+
+async function parseResponse<T>(response: Response): Promise<T> {
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok) {
@@ -32,21 +38,24 @@ async function parseResponse(response: Response) {
     );
   }
 
-  return result;
+  return result as T;
 }
 
-async function authRequest(endpoint: string, data: object) {
+async function authRequest(
+  endpoint: string,
+  data?: object
+): Promise<AuthResponse> {
   let response: Response;
 
   try {
     response = await fetch(`${API_URL}/api/auth/${endpoint}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: data
+        ? { "Content-Type": "application/json" }
+        : undefined,
       credentials: "include",
       cache: "no-store",
-      body: JSON.stringify(data),
+      body: data ? JSON.stringify(data) : undefined,
     });
   } catch {
     throw new Error(
@@ -54,7 +63,7 @@ async function authRequest(endpoint: string, data: object) {
     );
   }
 
-  return parseResponse(response);
+  return parseResponse<AuthResponse>(response);
 }
 
 export function loginUser(data: LoginData) {
@@ -90,7 +99,7 @@ export async function uploadProfileImage(file: File): Promise<string> {
     throw new Error("Unable to connect to the image upload service.");
   }
 
-  const result = await parseResponse(response);
+  const result = await parseResponse<{ imageURL: string }>(response);
 
   if (!result.imageURL) {
     throw new Error("The image service did not return an image URL.");
@@ -117,17 +126,5 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 
 export async function logoutUser() {
-  let response: Response;
-
-  try {
-    response = await fetch(`${API_URL}/api/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-    });
-  } catch {
-    throw new Error("Cannot connect to StudioSpace server.");
-  }
-
-  return parseResponse(response);
+  return authRequest("logout");
 }

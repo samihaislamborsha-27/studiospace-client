@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,19 +11,20 @@ import {
   Mail,
 } from "lucide-react";
 import { toast } from "sonner";
+
 import { loginUser } from "@/services/auth";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUser } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (loading) return;
@@ -41,15 +42,19 @@ export default function LoginPage() {
         password,
       });
 
+      if (!result.user) {
+        throw new Error("Login succeeded but no user information was returned.");
+      }
+
+      setUser(result.user);
+
       toast.success(result.message || "Welcome back!");
 
-      router.push("/");
+      router.replace("/");
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to sign in."
+        error instanceof Error ? error.message : "Unable to sign in."
       );
     } finally {
       setLoading(false);
@@ -67,7 +72,6 @@ export default function LoginPage() {
                 "url('https://images.unsplash.com/photo-1497366754035-f200968a6e72?q=85&w=1200')",
             }}
           />
-
           <div className="absolute inset-0 bg-linear-to-t from-[#172b25] via-[#233b35]/65 to-[#233b35]/30" />
 
           <div className="relative z-10">
@@ -121,18 +125,12 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-medium text-[#282725] dark:text-[#f3f0e9]"
-                >
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-[#282725] dark:text-[#f3f0e9]">
                   Email address
                 </label>
 
                 <div className="relative">
-                  <Mail
-                    size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#99948b]"
-                  />
+                  <Mail size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#99948b]" />
 
                   <input
                     id="email"
@@ -148,18 +146,12 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="password"
-                  className="mb-2 block text-sm font-medium text-[#282725] dark:text-[#f3f0e9]"
-                >
+                <label htmlFor="password" className="mb-2 block text-sm font-medium text-[#282725] dark:text-[#f3f0e9]">
                   Password
                 </label>
 
                 <div className="relative">
-                  <LockKeyhole
-                    size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#99948b]"
-                  />
+                  <LockKeyhole size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#99948b]" />
 
                   <input
                     id="password"
@@ -174,19 +166,11 @@ export default function LoginPage() {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowPassword((current) => !current)
-                    }
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
+                    onClick={() => setShowPassword((current) => !current)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#99948b] transition hover:text-[#8f4933] dark:hover:text-[#d59a7e]"
                   >
-                    {showPassword ? (
-                      <EyeOff size={17} />
-                    ) : (
-                      <Eye size={17} />
-                    )}
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
                 </div>
               </div>
@@ -209,11 +193,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() =>
-                toast.info(
-                  "Google sign-in will be available after OAuth setup."
-                )
-              }
+              onClick={() => toast.info("Google sign-in will be available after OAuth setup.")}
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#e7e0d6] px-5 py-3.5 text-sm font-medium text-[#282725] transition hover:border-[#c9a18e] hover:bg-[#f5f1ea] dark:border-[#39413b] dark:text-[#f3f0e9] dark:hover:border-[#8f4933] dark:hover:bg-[#2b312d]"
             >
               <span className="text-base font-bold">G</span>

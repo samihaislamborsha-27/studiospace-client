@@ -9,9 +9,9 @@ const benefits = [
 
 export default function StudioOwnerSection() {
   return (
-    <section className="bg-[#eee9e0] py-20 dark:bg-[#202622] sm:py-24 lg:py-28">
+    <section className="relative z-0 bg-[#eee9e0] py-16 transition-colors dark:bg-[#171a18] sm:py-20 lg:py-24">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-        <div className="grid overflow-hidden rounded-2xl bg-[#233b35] lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid overflow-hidden rounded-2xl bg-[#233b35] dark:bg-[#202a25] lg:grid-cols-[1.05fr_0.95fr]">
           <div
             role="img"
             aria-label="Creative photography studio with professional lighting equipment"
@@ -21,9 +21,10 @@ export default function StudioOwnerSection() {
                 "url('https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1400&q=85')",
             }}
           >
-            <div className="absolute inset-0 bg-linear-to-t from-[#14231f]/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-[#14231f]/65 via-transparent to-transparent" />
+
             <div className="absolute bottom-7 left-7 right-7 sm:bottom-9 sm:left-9">
-              <span className="inline-block border border-white/40 px-4 py-2 text-xs font-medium tracking-[0.12em] text-white">
+              <span className="inline-block border border-white/50 bg-[#14231f]/20 px-4 py-2 text-xs font-medium tracking-[0.12em] text-white backdrop-blur-sm">
                 FOR CREATIVE SPACE OWNERS
               </span>
             </div>
@@ -41,7 +42,7 @@ export default function StudioOwnerSection() {
               </span>
             </h2>
 
-            <p className="mt-7 max-w-md text-sm leading-8 text-white/70 sm:text-base">
+            <p className="mt-7 max-w-md text-sm leading-8 text-white/75 sm:text-base">
               Every creative space has something unique to offer. Bring
               yours to StudioSpace and help creators find the right
               environment for their next idea.
@@ -54,7 +55,7 @@ export default function StudioOwnerSection() {
                     size={17}
                     className="mt-1 shrink-0 text-[#d5a68b]"
                   />
-                  <span className="text-sm leading-6 text-white/85">
+                  <span className="text-sm leading-6 text-white/90">
                     {benefit}
                   </span>
                 </div>
@@ -64,9 +65,9 @@ export default function StudioOwnerSection() {
             <div className="mt-10">
               <Link
                 href="/register"
-                className="group inline-flex items-center gap-4 bg-[#f5f1ea] px-6 py-4 text-sm font-semibold text-[#233b35] transition-colors hover:bg-[#d5a68b]"
+                className="group inline-flex min-h-13 items-center justify-center gap-4 rounded-lg bg-[#8F4933] px-6 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#713824]"
               >
-                List your studio
+                Start listing your space
                 <ArrowUpRight
                   size={18}
                   className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
@@ -74,7 +75,8 @@ export default function StudioOwnerSection() {
               </Link>
             </div>
 
-            <p className="mt-5 text-xs text-white/45">
+            <p className="mt-5 flex items-center gap-2 text-xs text-white/55">
+              <Check size={14} className="text-[#d5a68b]" />
               Give your creative space the visibility it deserves.
             </p>
           </div>

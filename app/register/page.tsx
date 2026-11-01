@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
-  Camera,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -112,11 +111,24 @@ export default function RegisterPage() {
 
       let photoURL = "";
 
+      // Profile photo is optional.
+      // If uploading fails, account creation will continue without it.
       if (selectedImage) {
-        toast.info("Uploading your profile photo...");
-        photoURL = await uploadProfileImage(selectedImage);
+        try {
+          toast.info("Uploading your profile photo...");
+          photoURL = await uploadProfileImage(selectedImage);
+        } catch (uploadError) {
+          console.error("Profile photo upload failed:", uploadError);
+
+          photoURL = "";
+
+          toast.warning(
+            "Your photo couldn't be uploaded. Your account will be created without it."
+          );
+        }
       }
 
+      // Account registration proceeds even if photo upload fails.
       await registerUser({
         name: trimmedName,
         email: trimmedEmail,

@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
 import {
   getCurrentUser,
   logoutUser,
@@ -36,12 +37,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    getCurrentUser().then((currentUser) => {
-      if (active) {
-        setUser(currentUser);
-        setLoading(false);
+    async function loadUser() {
+      try {
+        const currentUser = await getCurrentUser();
+
+        if (active) {
+          setUser(currentUser);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
-    });
+    }
+
+    loadUser();
 
     return () => {
       active = false;
