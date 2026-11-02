@@ -1,188 +1,125 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  MapPin,
-  Star,
-  Clock3,
-} from "lucide-react";
+import Image from "next/image";
+import { ArrowUpRight, MapPin, Star } from "lucide-react";
+import { getFeaturedStudios } from "@/services/studioService";
+import type { Studio } from "@/lib/studios";
 
-const featuredStudios = [
-  {
-    id: "studio-01",
-    name: "The Natural Light Studio",
-    category: "Photography",
-    location: "Dhaka, Bangladesh",
-    price: "৳1,500",
-    unit: "/ hour",
-    rating: "4.9",
-    reviews: 28,
-    image:
-      "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1000&q=85",
-    imageAlt: "Warm and naturally lit photography studio",
-    tag: "Popular choice",
-  },
-  {
-    id: "studio-02",
-    name: "Frame House Studio",
-    category: "Film & Video",
-    location: "Dhaka, Bangladesh",
-    price: "৳2,000",
-    unit: "/ hour",
-    rating: "4.8",
-    reviews: 19,
-    image:
-      "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1000&q=85",
-    imageAlt: "Modern creative production workspace",
-    tag: "Creative space",
-  },
-  {
-    id: "studio-03",
-    name: "The Sound Room",
-    category: "Music & Podcast",
-    location: "Dhaka, Bangladesh",
-    price: "৳1,200",
-    unit: "/ hour",
-    rating: "4.9",
-    reviews: 34,
-    image:
-      "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1000&q=85",
-    imageAlt: "Professional recording studio with audio equipment",
-    tag: "Highly rated",
-  },
-];
+export default async function FeaturedStudiosSection() {
+  let studios: Studio[] = [];
 
-export default function FeaturedStudiosSection() {
+  try {
+    studios = await getFeaturedStudios();
+  } catch (error) {
+    console.error("Featured studios could not be loaded:", error);
+  }
+
   return (
-    <section className="bg-surface">
-      <div className="mx-auto max-w-360 px-5 py-20 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
-        {/* Heading */}
-        <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
+    <section className="bg-[#f5f1ea] px-5 py-16 text-[#233b35] dark:bg-[#171a18] dark:text-[#f5f1ea] sm:px-8 lg:px-12 lg:py-24">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-accent">
-              <span className="h-px w-7 bg-accent" />
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#a45d42]">
               Spaces worth discovering
-            </div>
+            </p>
 
-            <h2 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.045em] text-foreground sm:text-4xl lg:text-5xl">
-              A few places to
-              <span className="font-normal italic text-accent">
-                {" "}get inspired.
-              </span>
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl">
+              Featured studios
             </h2>
 
-            <p className="mt-4 max-w-lg text-sm leading-7 text-muted sm:text-base">
-              Explore creative spaces selected to help turn your next
-              project into something remarkable.
+            <p className="mt-3 max-w-xl text-sm leading-7 text-[#66736d] dark:text-[#b3beb8]">
+              Thoughtfully equipped spaces, ready to bring your next creative
+              project to life.
             </p>
           </div>
 
           <Link
             href="/studios"
-            className="group inline-flex w-fit shrink-0 items-center gap-2 border-b border-foreground/30 pb-2 text-sm font-semibold text-foreground transition-colors hover:border-accent hover:text-accent"
+            className="inline-flex w-fit items-center gap-2 border-b border-[#a45d42] pb-2 text-sm font-semibold transition hover:gap-3"
           >
             Explore all studios
-            <ArrowUpRight
-              size={16}
-              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            />
+            <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
 
-        {/* Studio cards */}
-        <div className="mt-12 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredStudios.map((studio) => (
-            <article
-              key={studio.id}
-              className="group min-w-0"
-            >
+        {studios.length > 0 ? (
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {studios.slice(0, 6).map((studio) => (
               <Link
+                key={studio.id}
                 href={`/studios/${studio.id}`}
-                aria-label={`View ${studio.name}`}
-                className="relative block aspect-4/3 overflow-hidden rounded-xl bg-surface-muted"
+                className="group min-w-0"
               >
-                <div
-                  role="img"
-                  aria-label={studio.imageAlt}
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                  style={{
-                    backgroundImage: `url("${studio.image}")`,
-                  }}
-                />
+                <div className="relative aspect-4/3 overflow-hidden bg-[#e5e0d7] dark:bg-white/10">
+                  {studio.image ? (
+                    <Image
+                      src={studio.image}
+                      alt={studio.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover transition duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-[#66736d]">
+                      Studio image unavailable
+                    </div>
+                  )}
 
-                <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/5" />
-
-                <span className="absolute left-4 top-4 rounded-full border border-white/30 bg-black/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm">
-                  {studio.tag}
-                </span>
-
-                <span className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#233b35] transition-transform duration-300 group-hover:rotate-45">
-                  <ArrowUpRight size={19} />
-                </span>
-              </Link>
-
-              <div className="pt-5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-accent">
+                  <span className="absolute left-4 top-4 bg-[#f5f1ea] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#233b35]">
                     {studio.category}
                   </span>
-
-                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-foreground">
-                    <Star size={14} fill="currentColor" className="text-[#b9874c]" />
-                    {studio.rating}
-                    <span className="font-normal text-muted">
-                      ({studio.reviews})
-                    </span>
-                  </span>
                 </div>
 
-                <Link
-                  href={`/studios/${studio.id}`}
-                  className="mt-2 block w-fit"
-                >
-                  <h3 className="text-xl font-semibold tracking-tight text-foreground transition-colors group-hover:text-accent">
-                    {studio.name}
-                  </h3>
-                </Link>
+                <div className="flex items-start justify-between gap-4 border-b border-[#233b35]/15 py-5 dark:border-white/15">
+                  <div className="min-w-0">
+                    <h3 className="truncate font-serif text-xl transition group-hover:text-[#a45d42] sm:text-2xl">
+                      {studio.title}
+                    </h3>
 
-                <div className="mt-3 flex items-center gap-1.5 text-sm text-muted">
-                  <MapPin size={15} className="shrink-0" />
-                  {studio.location}
-                </div>
-
-                <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
-                  <div>
-                    <span className="text-lg font-semibold tracking-tight text-foreground">
-                      {studio.price}
-                    </span>
-                    <span className="ml-1 text-xs text-muted">
-                      {studio.unit}
-                    </span>
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-[#66736d] dark:text-[#b3beb8]">
+                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{studio.location}</span>
+                    </p>
                   </div>
 
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted">
-                    <Clock3 size={14} />
-                    Hourly booking
+                  <ArrowUpRight className="mt-1 h-5 w-5 shrink-0 transition group-hover:-translate-y-1 group-hover:translate-x-1" />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-4 text-sm">
+                  <span className="font-semibold">
+                    ৳{studio.hourlyRate.toLocaleString("en-BD")}
+                    <span className="ml-1 text-xs font-normal text-[#66736d] dark:text-[#b3beb8]">
+                      / hour
+                    </span>
+                  </span>
+
+                  <span className="flex items-center gap-1 text-xs text-[#66736d] dark:text-[#b3beb8]">
+                    <Star className="h-3.5 w-3.5 fill-[#a45d42] text-[#a45d42]" />
+                    {studio.rating > 0 ? studio.rating.toFixed(1) : "New"}
+                    {studio.reviewCount > 0 && ` (${studio.reviewCount})`}
                   </span>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="border-y border-[#233b35]/10 py-14 text-center dark:border-white/10">
+            <h3 className="font-serif text-2xl">
+              New spaces are on the way.
+            </h3>
 
-        {/* Bottom link */}
-        <div className="mt-12 flex justify-center">
-          <Link
-            href="/studios"
-            className="group inline-flex items-center gap-3 rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-all hover:border-primary hover:bg-primary hover:text-background"
-          >
-            Discover more spaces
-            <ArrowRight
-              size={16}
-              className="transition-transform group-hover:translate-x-1"
-            />
-          </Link>
-        </div>
+            <p className="mt-3 text-sm text-[#66736d] dark:text-[#b3beb8]">
+              Featured studios will appear here as hosts publish their spaces.
+            </p>
+
+            <Link
+              href="/studios"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#a45d42] hover:underline"
+            >
+              Browse all studios
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
