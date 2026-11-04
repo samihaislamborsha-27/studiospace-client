@@ -1,7 +1,9 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X, RotateCcw } from "lucide-react";
+
 import StudioCard from "@/components/studios/StudioCard";
 import { studioCategories, type Studio } from "@/lib/studios";
 import { getStudios } from "@/services/studioService";
@@ -9,10 +11,20 @@ import { getStudios } from "@/services/studioService";
 type SortOption = "recommended" | "price-low" | "price-high" | "rating";
 
 export default function ExploreStudios() {
+  const searchParams = useSearchParams();
+
+  const initialCategory = searchParams.get("category") || "";
+
+  const validInitialCategory = studioCategories.find(
+    (item) => item.toLowerCase() === initialCategory.toLowerCase()
+  );
+
   const [studios, setStudios] = useState<Studio[]>([]);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
-  const [category, setCategory] = useState("All categories");
+  const [category, setCategory] = useState(
+    validInitialCategory || "All categories"
+  );
   const [maxPrice, setMaxPrice] = useState(5000);
   const [sortBy, setSortBy] = useState<SortOption>("recommended");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -20,7 +32,17 @@ export default function ExploreStudios() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const controller = new AbortController();
+    const urlCategory = searchParams.get("category") || "";
+
+    const matchedCategory = studioCategories.find(
+      (item) => item.toLowerCase() === urlCategory.toLowerCase()
+    );
+
+    setCategory(matchedCategory || "All categories");
+  }, [searchParams]);
+
+  useEffect(() => {
+    let active = true;
 
     async function loadStudios() {
       try {
@@ -29,11 +51,11 @@ export default function ExploreStudios() {
 
         const data = await getStudios({ limit: 100 });
 
-        if (!controller.signal.aborted) {
+        if (active) {
           setStudios(data);
         }
       } catch (err) {
-        if (!controller.signal.aborted) {
+        if (active) {
           setError(
             err instanceof Error
               ? err.message
@@ -41,7 +63,7 @@ export default function ExploreStudios() {
           );
         }
       } finally {
-        if (!controller.signal.aborted) {
+        if (active) {
           setLoading(false);
         }
       }
@@ -49,7 +71,9 @@ export default function ExploreStudios() {
 
     loadStudios();
 
-    return () => controller.abort();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const filteredStudios = useMemo(() => {
@@ -71,7 +95,8 @@ export default function ExploreStudios() {
         studio.location.toLowerCase().includes(normalizedLocation);
 
       const matchesCategory =
-        category === "All categories" || studio.category === category;
+        category === "All categories" ||
+        studio.category.toLowerCase() === category.toLowerCase();
 
       const matchesPrice = studio.hourlyRate <= maxPrice;
 
@@ -95,7 +120,8 @@ export default function ExploreStudios() {
         break;
       default:
         result.sort(
-          (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))
+          (a, b) =>
+            Number(Boolean(b.featured)) - Number(Boolean(a.featured))
         );
     }
 
@@ -130,6 +156,7 @@ export default function ExploreStudios() {
                 Spaces that bring
                 <br className="hidden sm:block" /> your ideas to life.
               </h1>
+
               <p className="mt-5 max-w-xl text-sm leading-7 text-[#66736d] dark:text-[#b3beb8] sm:text-base">
                 Discover and book inspiring creative studios for photography,
                 filmmaking, music, podcasting, and everything in between.
@@ -137,7 +164,9 @@ export default function ExploreStudios() {
             </div>
 
             <p className="text-sm text-[#66736d] dark:text-[#b3beb8]">
-              {loading ? "Loading spaces..." : `${filteredStudios.length} spaces found`}
+              {loading
+                ? "Loading spaces..."
+                : `${filteredStudios.length} spaces found`}
             </p>
           </div>
         </div>
@@ -147,6 +176,7 @@ export default function ExploreStudios() {
         <div className="mb-8 grid gap-3 rounded-xl border border-[#233b35]/10 bg-white/70 p-4 dark:border-white/10 dark:bg-white/3 md:grid-cols-[1.5fr_1fr_1fr_auto] md:p-5">
           <label className="flex items-center gap-3 border-b border-[#233b35]/10 pb-3 md:border-b-0 md:border-r md:pb-0 md:pr-4 dark:border-white/10">
             <Search className="h-4 w-4 shrink-0 text-[#a45d42]" />
+
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -169,7 +199,8 @@ export default function ExploreStudios() {
             aria-label="Filter by category"
             className="w-full border-b border-[#233b35]/10 bg-transparent px-1 py-3 text-sm outline-none focus:ring-0 md:border-b-0 md:border-r md:px-4 md:py-0 dark:border-white/10 dark:bg-[#171a18]"
           >
-            <option>All categories</option>
+            <option value="All categories">All categories</option>
+
             {studioCategories.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -194,10 +225,12 @@ export default function ExploreStudios() {
                 <label htmlFor="max-price" className="font-medium">
                   Maximum hourly rate
                 </label>
+
                 <span className="font-semibold">
                   ৳{maxPrice.toLocaleString("en-BD")}
                 </span>
               </div>
+
               <input
                 id="max-price"
                 type="range"
@@ -226,6 +259,7 @@ export default function ExploreStudios() {
             <h2 className="font-serif text-2xl sm:text-3xl">
               Explore creative spaces
             </h2>
+
             <p className="mt-1 text-sm text-[#66736d] dark:text-[#b3beb8]">
               Find a space that fits your next project.
             </p>
@@ -233,7 +267,9 @@ export default function ExploreStudios() {
 
           <select
             value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as SortOption)}
+            onChange={(event) =>
+              setSortBy(event.target.value as SortOption)
+            }
             aria-label="Sort studios"
             className="w-full rounded-lg border border-[#233b35]/15 bg-transparent px-4 py-3 text-sm outline-none focus:ring-0 sm:w-auto dark:border-white/15 dark:bg-[#171a18]"
           >
@@ -249,6 +285,7 @@ export default function ExploreStudios() {
             <p className="text-xs text-[#66736d] dark:text-[#b3beb8]">
               Showing filtered results
             </p>
+
             <button
               type="button"
               onClick={clearFilters}
@@ -268,6 +305,7 @@ export default function ExploreStudios() {
                 className="overflow-hidden rounded-xl border border-[#233b35]/10 dark:border-white/10"
               >
                 <div className="aspect-4/3 animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+
                 <div className="space-y-3 p-5">
                   <div className="h-3 w-1/3 animate-pulse rounded bg-[#233b35]/10 dark:bg-white/10" />
                   <div className="h-5 w-3/4 animate-pulse rounded bg-[#233b35]/10 dark:bg-white/10" />
@@ -278,10 +316,14 @@ export default function ExploreStudios() {
           </div>
         ) : error ? (
           <div className="border-y border-[#233b35]/10 py-16 text-center dark:border-white/10">
-            <h3 className="font-serif text-2xl">We couldn’t load the studios</h3>
+            <h3 className="font-serif text-2xl">
+              We couldn’t load the studios
+            </h3>
+
             <p className="mx-auto mt-3 max-w-md text-sm text-[#66736d] dark:text-[#b3beb8]">
               {error}
             </p>
+
             <button
               type="button"
               onClick={() => window.location.reload()}
@@ -301,12 +343,15 @@ export default function ExploreStudios() {
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
               No matching spaces
             </p>
+
             <h3 className="font-serif text-2xl sm:text-3xl">
               Try a different search.
             </h3>
+
             <p className="mt-3 text-sm text-[#66736d] dark:text-[#b3beb8]">
               Adjust your filters to discover more creative spaces.
             </p>
+
             <button
               type="button"
               onClick={clearFilters}

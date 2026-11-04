@@ -1,10 +1,10 @@
-import type { Studio } from "@/lib/studios";
+﻿import type { Studio } from "@/lib/studios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
 type StudioApiResponse = {
   success?: boolean;
-  data?: Record<string, unknown>[];
+  data?: Record<string, unknown> | Record<string, unknown>[];
   message?: string;
 };
 
@@ -18,6 +18,18 @@ export type StudioQuery = {
   limit?: number;
 };
 
+export type CreateStudioPayload = {
+  title: string;
+  category: string;
+  location: string;
+  hourlyRate: number;
+  securityDeposit: number;
+  capacity: number;
+  image: string;
+  amenities: string[];
+  overview: string;
+};
+
 function normalizeStudio(raw: Record<string, unknown>): Studio {
   return {
     id: String(raw._id ?? raw.id ?? ""),
@@ -25,6 +37,7 @@ function normalizeStudio(raw: Record<string, unknown>): Studio {
     category: String(raw.category ?? ""),
     location: String(raw.location ?? ""),
     hourlyRate: Number(raw.hourlyRate ?? 0),
+    securityDeposit: Number(raw.securityDeposit ?? 0),
     rating: Number(raw.rating ?? 0),
     reviewCount: Number(raw.reviewCount ?? 0),
     capacity: Number(raw.capacity ?? 0),
@@ -32,9 +45,8 @@ function normalizeStudio(raw: Record<string, unknown>): Studio {
     amenities: Array.isArray(raw.amenities)
       ? raw.amenities.map(String)
       : [],
-    featured: Boolean(raw.featured),
-    securityDeposit: Number(raw.securityDeposit ?? 0),
     overview: String(raw.overview ?? ""),
+    featured: Boolean(raw.featured),
     ownerName: String(raw.ownerName ?? ""),
     ownerEmail: String(raw.ownerEmail ?? ""),
     ownerPhotoURL: String(raw.ownerPhotoURL ?? ""),
@@ -42,31 +54,61 @@ function normalizeStudio(raw: Record<string, unknown>): Studio {
   };
 }
 
+async function parseResponse(response: Response): Promise<StudioApiResponse> {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!contentType.includes("application/json")) {
+    const responseText = await response.text();
+
+    console.error("Studio API returned a non-JSON response:", {
+      status: response.status,
+      contentType,
+      preview: responseText.slice(0, 200),
+    });
+
+    throw new Error(
+      `The Studio API returned an unexpected response (${response.status}). Check your API URL and backend route.`
+    );
+  }
+
+  return (await response.json()) as StudioApiResponse;
+}
+
 async function requestStudios(
   endpoint: string,
   options?: RequestInit
 ): Promise<Studio[]> {
   if (!API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is missing. Check your frontend .env.local file."
+    );
   }
 
   const response = await fetch(`${API_URL}/api/studios${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(options?.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...options?.headers,
     },
   });
 
-  const result = (await response.json()) as StudioApiResponse;
+  const result = await parseResponse(response);
 
   if (!response.ok || result.success === false) {
     throw new Error(result.message || "Unable to load studios.");
   }
 
-  return Array.isArray(result.data)
-    ? result.data.map(normalizeStudio)
-    : [];
+  if (Array.isArray(result.data)) {
+    return result.data.map(normalizeStudio);
+  }
+
+  if (result.data && typeof result.data === "object") {
+    return [normalizeStudio(result.data)];
+  }
+
+  return [];
 }
 
 export async function getStudios(
@@ -95,7 +137,102 @@ export async function getStudioById(id: string): Promise<Studio | null> {
   try {
     const studios = await requestStudios(`/${encodeURIComponent(id)}`);
     return studios[0] ?? null;
-  } catch {
+  } catch (error) {
+    console.error("Unable to load studio details:", error);
     return null;
+  }
+}
+
+export async function getMyStudios(): Promise<Studio[]> {
+  return requestStudios("/owner/mine", {
+    credentials: "include",
+  });
+}
+
+export async function createStudio(
+  payload: CreateStudioPayload
+): Promise<Studio> {
+  if (!API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is missing. Check your frontend .env.local file."
+    );
+  }
+
+  const response = await fetch(`${API_URL}/api/studios`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await parseResponse(response);
+
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || "Unable to create studio.");
+  }
+
+  if (!result.data || Array.isArray(result.data)) {
+    throw new Error("The server did not return the created studio.");
+  }
+
+  return normalizeStudio(result.data);
+}
+
+export async function updateStudio(
+  id: string,
+  payload: CreateStudioPayload
+): Promise<Studio> {
+  if (!API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is missing. Check your frontend .env.local file."
+    );
+  }
+
+  const response = await fetch(
+    `${API_URL}/api/studios/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  const result = await parseResponse(response);
+
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || "Unable to update studio.");
+  }
+
+  if (!result.data || Array.isArray(result.data)) {
+    throw new Error("The server did not return the updated studio.");
+  }
+
+  return normalizeStudio(result.data);
+}
+
+export async function deleteStudio(id: string): Promise<void> {
+  if (!API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is missing. Check your frontend .env.local file."
+    );
+  }
+
+  const response = await fetch(
+    `${API_URL}/api/studios/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  const result = await parseResponse(response);
+
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || "Unable to delete studio.");
   }
 }

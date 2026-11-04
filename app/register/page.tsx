@@ -23,6 +23,22 @@ import {
   uploadProfileImage,
 } from "@/services/auth";
 
+function getSafeRedirect(): string {
+  const requestedPath = new URLSearchParams(window.location.search).get("next");
+
+  if (
+    requestedPath &&
+    requestedPath.startsWith("/") &&
+    !requestedPath.startsWith("//") &&
+    !requestedPath.startsWith("/login") &&
+    !requestedPath.startsWith("/register")
+  ) {
+    return requestedPath;
+  }
+
+  return "/add-studio";
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +51,21 @@ export default function RegisterPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewURL, setPreviewURL] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginHref, setLoginHref] = useState("/login");
+
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get("next");
+
+    if (
+      next &&
+      next.startsWith("/") &&
+      !next.startsWith("//") &&
+      !next.startsWith("/login") &&
+      !next.startsWith("/register")
+    ) {
+      setLoginHref(`/login?next=${encodeURIComponent(next)}`);
+    }
+  }, []);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -83,6 +114,8 @@ export default function RegisterPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (loading) return;
+
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
 
@@ -111,8 +144,6 @@ export default function RegisterPage() {
 
       let photoURL = "";
 
-      // Profile photo is optional.
-      // If uploading fails, account creation will continue without it.
       if (selectedImage) {
         try {
           toast.info("Uploading your profile photo...");
@@ -128,7 +159,6 @@ export default function RegisterPage() {
         }
       }
 
-      // Account registration proceeds even if photo upload fails.
       await registerUser({
         name: trimmedName,
         email: trimmedEmail,
@@ -137,7 +167,10 @@ export default function RegisterPage() {
       });
 
       toast.success("Account created successfully! Please log in.");
-      router.push("/login");
+
+      const destination = getSafeRedirect();
+
+      router.push(`/login?next=${encodeURIComponent(destination)}`);
       router.refresh();
     } catch (error) {
       toast.error(
@@ -153,7 +186,6 @@ export default function RegisterPage() {
   return (
     <main className="flex flex-1 items-center justify-center bg-[#F5F1EA] px-4 py-10 text-[#282725] sm:px-6 lg:py-14">
       <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-[#E7E0D6] bg-white shadow-[0_20px_70px_rgba(40,39,37,0.08)] lg:grid-cols-[0.9fr_1.1fr]">
-        {/* Left editorial panel */}
         <section className="relative hidden min-h-180 flex-col justify-between overflow-hidden bg-[#233B35] p-10 text-[#F5F1EA] lg:flex xl:p-14">
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" />
           <div className="absolute -bottom-36 -left-20 h-96 w-96 rounded-full border border-white/10" />
@@ -201,7 +233,6 @@ export default function RegisterPage() {
           </div>
         </section>
 
-        {/* Registration form */}
         <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12 xl:px-16">
           <div className="w-full max-w-md">
             <div className="mb-8 lg:hidden">
@@ -225,7 +256,6 @@ export default function RegisterPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Profile photo */}
               <div>
                 <label className="mb-3 block text-sm font-medium text-[#282725]">
                   Profile photo
@@ -292,7 +322,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Full name */}
               <div>
                 <label
                   htmlFor="name"
@@ -319,7 +348,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label
                   htmlFor="email"
@@ -346,7 +374,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label
                   htmlFor="password"
@@ -387,7 +414,6 @@ export default function RegisterPage() {
                 </p>
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={loading}
@@ -410,7 +436,7 @@ export default function RegisterPage() {
             <p className="mt-7 text-center text-sm text-[#77736D]">
               Already have an account?{" "}
               <Link
-                href="/login"
+                href={loginHref}
                 className="font-semibold text-[#8F4933] transition hover:text-[#713824]"
               >
                 Log in

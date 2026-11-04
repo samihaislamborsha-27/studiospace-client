@@ -64,7 +64,7 @@ export default function StudioOwnerSection() {
 
             <div className="mt-10">
               <Link
-                href="/register"
+                href="/add-studio"
                 className="group inline-flex min-h-13 items-center justify-center gap-4 rounded-lg bg-[#8F4933] px-6 py-4 text-sm font-semibold text-white transition-colors hover:bg-[#713824]"
               >
                 Start listing your space

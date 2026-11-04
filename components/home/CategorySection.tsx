@@ -15,35 +15,30 @@ const categories = [
     title: "Photography",
     description: "Studios for portraits, products, and visual stories.",
     icon: Camera,
-    slug: "photography",
   },
   {
     number: "02",
     title: "Film & Video",
     description: "Production spaces for your next visual project.",
     icon: Clapperboard,
-    slug: "film-video",
   },
   {
     number: "03",
     title: "Podcast",
     description: "Purpose-built spaces for conversations and audio.",
     icon: Mic2,
-    slug: "podcast",
   },
   {
     number: "04",
     title: "Music",
     description: "Rehearsal and recording spaces for every sound.",
     icon: Music2,
-    slug: "music",
   },
   {
     number: "05",
     title: "Art & Creative",
     description: "Room to experiment, make, and bring ideas to life.",
     icon: Palette,
-    slug: "art-creative",
   },
 ];
 
@@ -89,8 +84,8 @@ export default function CategorySection() {
 
             return (
               <Link
-                key={category.slug}
-                href={`/studios?category=${category.slug}`}
+                key={category.title}
+                href={`/studios?category=${encodeURIComponent(category.title)}`}
                 className="group relative flex min-h-60 flex-col justify-between border-b border-r border-border p-6 transition-colors duration-300 hover:bg-background sm:min-h-64 sm:p-7"
               >
                 <div className="flex items-start justify-between">

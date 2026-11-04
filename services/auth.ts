@@ -23,6 +23,11 @@ export type RegisterData = {
   password: string;
 };
 
+export type ProfileUpdateData = {
+  name?: string;
+  photoURL?: string;
+};
+
 type AuthResponse = {
   success: boolean;
   message: string;
@@ -72,6 +77,28 @@ export function loginUser(data: LoginData) {
 
 export function registerUser(data: RegisterData) {
   return authRequest("register", data);
+}
+
+export async function updateProfile(
+  data: ProfileUpdateData
+): Promise<AuthResponse> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}/api/auth/profile`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      cache: "no-store",
+      body: JSON.stringify(data),
+    });
+  } catch {
+    throw new Error("Unable to connect to StudioSpace server.");
+  }
+
+  return parseResponse<AuthResponse>(response);
 }
 
 export async function uploadProfileImage(file: File): Promise<string> {

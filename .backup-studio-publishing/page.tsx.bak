@@ -1,0 +1,122 @@
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
+
+import { useAuth } from "@/context/AuthProvider";
+import AddStudioForm from "@/components/studios/AddStudioForm";
+
+export default function AddStudioPage() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
+    return (
+      <main className="flex min-h-[70vh] items-center justify-center bg-[#f5f1ea] dark:bg-[#171a18]">
+        <div className="flex items-center gap-3 text-sm text-[#66736d] dark:text-[#b3beb8]">
+          <LoaderCircle className="h-5 w-5 animate-spin text-[#a45d42]" />
+          Checking your account...
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f5f1ea] text-[#233b35] dark:bg-[#171a18] dark:text-[#f5f1ea]">
+      <section className="border-b border-[#233b35]/10 px-5 py-10 dark:border-white/10 sm:px-8 lg:px-12 lg:py-14">
+        <div className="mx-auto max-w-7xl">
+          <Link
+            href="/studios"
+            className="mb-8 inline-flex items-center gap-2 text-sm text-[#66736d] transition hover:text-[#a45d42] dark:text-[#b3beb8]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Explore Studios
+          </Link>
+
+          <div className="max-w-3xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#a45d42]">
+              Become a host
+            </p>
+
+            <h1 className="font-serif text-4xl leading-tight sm:text-5xl lg:text-6xl">
+              Give your space
+              <br className="hidden sm:block" /> a place to shine.
+            </h1>
+
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-[#66736d] dark:text-[#b3beb8] sm:text-base">
+              Share your creative workspace with photographers, filmmakers,
+              musicians, and makers. Add your studio details to help people
+              find the right space for their next project.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+          <div className="min-w-0">
+            <AddStudioForm />
+          </div>
+
+          <aside className="space-y-5 lg:sticky lg:top-24">
+            <div className="border border-[#233b35]/10 bg-white/60 p-6 dark:border-white/10 dark:bg-white/3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#a45d42]">
+                A good listing starts here
+              </p>
+
+              <h2 className="mt-3 font-serif text-2xl">
+                Make your studio stand out.
+              </h2>
+
+              <ul className="mt-5 space-y-4 text-sm leading-6 text-[#66736d] dark:text-[#b3beb8]">
+                <li>
+                  <span className="mb-1 block font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    Use a clear cover photo
+                  </span>
+                  Show the actual space in good lighting.
+                </li>
+
+                <li>
+                  <span className="mb-1 block font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    Describe the experience
+                  </span>
+                  Explain what makes your studio useful for creative work.
+                </li>
+
+                <li>
+                  <span className="mb-1 block font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    Be transparent about pricing
+                  </span>
+                  Set a clear hourly rate and security deposit.
+                </li>
+
+                <li>
+                  <span className="mb-1 block font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    List available amenities
+                  </span>
+                  Help guests understand what equipment and facilities are included.
+                </li>
+              </ul>
+            </div>
+
+            <div className="border-l-2 border-[#a45d42] bg-[#a45d42]/5 p-5">
+              <p className="font-serif text-lg">Your space. Your terms.</p>
+              <p className="mt-2 text-sm leading-6 text-[#66736d] dark:text-[#b3beb8]">
+                Keep your listing accurate and make sure the information is
+                up to date before accepting bookings.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  );
+}

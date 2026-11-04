@@ -1,17 +1,76 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, MapPin, Star } from "lucide-react";
+import {
+  ArrowUpRight,
+  MapPin,
+  Star,
+  LoaderCircle,
+  RefreshCw,
+} from "lucide-react";
+
 import { getFeaturedStudios } from "@/services/studioService";
 import type { Studio } from "@/lib/studios";
 
-export default async function FeaturedStudiosSection() {
-  let studios: Studio[] = [];
+export default function FeaturedStudiosSection() {
+  const [studios, setStudios] = useState<Studio[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  try {
-    studios = await getFeaturedStudios();
-  } catch (error) {
-    console.error("Featured studios could not be loaded:", error);
-  }
+  useEffect(() => {
+    let active = true;
+
+    const loadFeaturedStudios = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getFeaturedStudios();
+
+        if (active) {
+          setStudios(data.slice(0, 6));
+        }
+      } catch (err) {
+        if (active) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load featured studios."
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadFeaturedStudios();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const retryLoading = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await getFeaturedStudios();
+      setStudios(data.slice(0, 6));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load featured studios."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <section className="bg-[#f5f1ea] px-5 py-16 text-[#233b35] dark:bg-[#171a18] dark:text-[#f5f1ea] sm:px-8 lg:px-12 lg:py-24">
@@ -41,9 +100,42 @@ export default async function FeaturedStudiosSection() {
           </Link>
         </div>
 
-        {studios.length > 0 ? (
+        {loading ? (
           <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-            {studios.slice(0, 6).map((studio) => (
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse"
+              >
+                <div className="aspect-4/3 bg-[#233b35]/10 dark:bg-white/10" />
+                <div className="mt-5 h-5 w-3/4 bg-[#233b35]/10 dark:bg-white/10" />
+                <div className="mt-3 h-3 w-1/2 bg-[#233b35]/10 dark:bg-white/10" />
+                <div className="mt-5 h-4 w-1/3 bg-[#233b35]/10 dark:bg-white/10" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="border-y border-[#233b35]/10 py-14 text-center dark:border-white/10">
+            <h3 className="font-serif text-2xl">
+              We couldn&apos;t load the featured studios.
+            </h3>
+
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#66736d] dark:text-[#b3beb8]">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={retryLoading}
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#233b35] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#314d45] dark:bg-[#a45d42] dark:hover:bg-[#b96b4e]"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try again
+            </button>
+          </div>
+        ) : studios.length > 0 ? (
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {studios.map((studio) => (
               <Link
                 key={studio.id}
                 href={`/studios/${studio.id}`}

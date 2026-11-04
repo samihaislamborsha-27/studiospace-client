@@ -15,6 +15,22 @@ import { toast } from "sonner";
 import { loginUser } from "@/services/auth";
 import { useAuth } from "@/context/AuthProvider";
 
+function getSafeRedirect(): string {
+  const requestedPath = new URLSearchParams(window.location.search).get("next");
+
+  if (
+    requestedPath &&
+    requestedPath.startsWith("/") &&
+    !requestedPath.startsWith("//") &&
+    !requestedPath.startsWith("/login") &&
+    !requestedPath.startsWith("/register")
+  ) {
+    return requestedPath;
+  }
+
+  return "/";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useAuth();
@@ -50,7 +66,9 @@ export default function LoginPage() {
 
       toast.success(result.message || "Welcome back!");
 
-      router.replace("/");
+      const destination = getSafeRedirect();
+
+      router.replace(destination);
       router.refresh();
     } catch (error) {
       toast.error(
@@ -60,6 +78,12 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+
+  const registerHref = `/register?next=${encodeURIComponent(
+    new URLSearchParams(
+      typeof window === "undefined" ? "" : window.location.search
+    ).get("next") || "/add-studio"
+  )}`;
 
   return (
     <main className="flex min-h-[calc(100vh-80px)] items-center justify-center bg-[#f5f1ea] px-4 py-12 dark:bg-[#171a18] sm:px-6">
@@ -203,7 +227,7 @@ export default function LoginPage() {
             <p className="mt-7 text-center text-sm text-[#77736d] dark:text-[#aaa99f]">
               New to StudioSpace?{" "}
               <Link
-                href="/register"
+                href={registerHref}
                 className="font-semibold text-[#8f4933] transition hover:text-[#713824] hover:underline dark:text-[#d59a7e] dark:hover:text-[#e5b39b]"
               >
                 Create an account
