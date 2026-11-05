@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -77,7 +77,7 @@ const labelClass =
 const errorClass =
   "mt-2 text-xs font-medium text-red-600 dark:text-red-400";
 
-export default function EditStudioPage() {
+function EditStudioContent() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const studioId = params.id;
@@ -1031,5 +1031,13 @@ export default function EditStudioPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function EditStudioPage() {
+  return (
+    <Suspense fallback={null}>
+      <EditStudioContent />
+    </Suspense>
   );
 }

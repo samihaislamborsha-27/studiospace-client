@@ -1,7 +1,8 @@
 ﻿import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 
-import  ThemeProvider  from "@/components/ThemeProvider";
+import ThemeProvider from "@/components/ThemeProvider";
 import { AuthProvider } from "@/context/AuthProvider";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -19,11 +20,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         <ThemeProvider>
           <AuthProvider>
-            <Navbar />
+            <Suspense fallback={null}>
+              <Navbar />
+            </Suspense>
 
             <main className="flex-1">{children}</main>
 

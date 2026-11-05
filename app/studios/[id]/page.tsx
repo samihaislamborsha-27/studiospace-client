@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -12,6 +12,8 @@ import {
   Clock3,
   ImageOff,
   Mail,
+  Copy,
+  X,
   MapPin,
   ShieldCheck,
   Star,
@@ -19,6 +21,7 @@ import {
   Wifi,
 } from "lucide-react";
 
+import { toast } from "sonner";
 import { getStudioById } from "@/services/studioService";
 import type { Studio } from "@/lib/studios";
 
@@ -93,13 +96,25 @@ function EmptyState({
   );
 }
 
-export default function StudioDetailsPage() {
+function StudioDetailsContent() {
   const params = useParams<{ id: string }>();
   const studioId = params?.id;
 
   const [studio, setStudio] = useState<Studio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [contactOpen, setContactOpen] = useState(false);
+
+  const handleCopyEmail = async () => {
+    if (!studio?.ownerEmail) return;
+
+    try {
+      await navigator.clipboard.writeText(studio.ownerEmail);
+      toast.success("Owner email copied successfully.");
+    } catch {
+      toast.error("Unable to copy email. Please copy it manually.");
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -400,15 +415,16 @@ export default function StudioDetailsPage() {
                 </div>
 
                 {hasOwnerEmail && (
-                  <a
-                    href={`mailto:${studio.ownerEmail}?subject=${encodeURIComponent(
-                      `Inquiry about ${studio.title}`
-                    )}`}
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(true)}
                     className="inline-flex shrink-0 items-center justify-center gap-2 border border-[#233b35]/15 px-4 py-3 text-sm font-semibold text-[#233b35] transition hover:border-[#a45d42] hover:text-[#a45d42] dark:border-white/15 dark:text-[#f5f1ea] dark:hover:border-[#d59a7d] dark:hover:text-[#d59a7d]"
                   >
+
                     <Mail className="h-4 w-4" />
                     Contact owner
-                  </a>
+                  
+                  </button>
                 )}
               </div>
             </section>
@@ -477,15 +493,16 @@ export default function StudioDetailsPage() {
 
               <div className="border-t border-[#233b35]/10 pt-6 dark:border-white/10">
                 {hasOwnerEmail ? (
-                  <a
-                    href={`mailto:${studio.ownerEmail}?subject=${encodeURIComponent(
-                      `Booking inquiry: ${studio.title}`
-                    )}`}
+                  <button
+                    type="button"
+                    onClick={() => setContactOpen(true)}
                     className="flex w-full items-center justify-center gap-2 bg-[#233b35] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#344f46] dark:bg-[#f5f1ea] dark:text-[#233b35] dark:hover:bg-white"
                   >
+
                     Contact studio owner
                     <ArrowUpRight className="h-4 w-4" />
-                  </a>
+                  
+                  </button>
                 ) : (
                   <div className="bg-[#f5f1ea] px-4 py-4 text-center text-sm text-[#66736d] dark:bg-white/6 dark:text-[#b3beb8]">
                     Owner contact information is unavailable.
@@ -515,6 +532,83 @@ export default function StudioDetailsPage() {
           </aside>
         </div>
 
+        {/* Contact owner dialog */}
+        {contactOpen && hasOwnerEmail && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#101713]/65 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setContactOpen(false);
+              }
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="contact-dialog-title"
+              className="relative w-full max-w-md border border-[#e7e0d6] bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#222724] sm:p-8"
+            >
+              <button
+                type="button"
+                onClick={() => setContactOpen(false)}
+                aria-label="Close contact dialog"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center text-[#52615a] transition hover:bg-[#f1eee8] hover:text-[#233b35] dark:text-[#b3beb8] dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex h-12 w-12 items-center justify-center bg-[#f1eae1] text-[#a45d42] dark:bg-white/10 dark:text-[#d59a7e]">
+                <Mail className="h-5 w-5" />
+              </div>
+
+              <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
+                Get in touch
+              </p>
+
+              <h2
+                id="contact-dialog-title"
+                className="mt-2 font-serif text-2xl text-[#233b35] dark:text-[#f5f1ea]"
+              >
+                Contact {ownerName}
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-[#52615a] dark:text-[#b3beb8]">
+                Use the email address below to discuss this studio, availability
+                and booking arrangements.
+              </p>
+
+              <div className="mt-6 border border-[#e5e9e5] bg-[#f8f7f4] p-4 dark:border-white/10 dark:bg-white/5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#66736d] dark:text-[#9aa79f]">
+                  Owner email address
+                </p>
+
+                <p className="mt-2 break-all text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                  {studio.ownerEmail}
+                </p>
+              </div>
+
+              <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setContactOpen(false)}
+                  className="flex-1 border border-[#dce3de] px-4 py-3 text-sm font-semibold text-[#52615a] transition hover:bg-[#f5f7f4] dark:border-white/15 dark:text-[#d0d9d3] dark:hover:bg-white/5"
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyEmail}
+                  className="flex flex-1 items-center justify-center gap-2 bg-[#233b35] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#344f46] dark:bg-[#e8eee9] dark:text-[#233b35] dark:hover:bg-white"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy email
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
         {/* Bottom navigation */}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#233b35]/10 pt-6 dark:border-white/10">
           <p className="text-sm text-[#66736d] dark:text-[#b3beb8]">
@@ -531,5 +625,13 @@ export default function StudioDetailsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StudioDetailsPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <StudioDetailsContent />
+    </Suspense>
   );
 }

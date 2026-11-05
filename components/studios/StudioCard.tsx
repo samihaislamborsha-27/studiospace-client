@@ -9,13 +9,13 @@ type StudioCardProps = {
 
 export default function StudioCard({ studio }: StudioCardProps) {
   return (
-    <article className="group min-w-0 overflow-hidden border border-[#233b35]/10 bg-white/70 transition duration-300 hover:-translate-y-1 hover:border-[#a45d42]/40 dark:border-white/10 dark:bg-white/[0.03]">
+    <article className="group min-w-0 overflow-hidden border border-[#233b35]/10 bg-white/70 transition duration-300 hover:-translate-y-1 hover:border-[#a45d42]/40 dark:border-white/10 dark:bg-white/3">
       <Link
         href={`/studios/${studio.id}`}
         aria-label={`View ${studio.title}`}
         className="block"
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#e5e0d7] dark:bg-white/10">
+        <div className="relative aspect-4/3 overflow-hidden bg-[#e5e0d7] dark:bg-white/10">
           {studio.image ? (
             <Image
               src={studio.image}

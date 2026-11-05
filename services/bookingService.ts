@@ -1,8 +1,9 @@
-export type BookingStatus =
+﻿export type BookingStatus =
   | "Pending"
   | "Confirmed"
   | "Completed"
-  | "Cancelled";
+  | "Cancelled"
+  | "Rejected";
 
 export type CreateBookingPayload = {
   studioId: string;
@@ -20,6 +21,9 @@ export type Booking = {
   studioLocation: string;
   ownerName: string;
   ownerEmail: string;
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
   bookingDate: string;
   startTime: string;
   duration: number;
@@ -29,6 +33,7 @@ export type Booking = {
   notes: string;
   status: BookingStatus;
   createdAt: string;
+  updatedAt?: string;
 };
 
 type BookingResponse = {
@@ -81,6 +86,14 @@ async function bookingRequest(
   return result;
 }
 
+function requireBooking(data: Booking | Booking[] | undefined): Booking {
+  if (!data || Array.isArray(data)) {
+    throw new Error("The server did not return the booking.");
+  }
+
+  return data;
+}
+
 export async function createBooking(
   payload: CreateBookingPayload
 ): Promise<Booking> {
@@ -89,17 +102,33 @@ export async function createBooking(
     body: JSON.stringify(payload),
   });
 
-  if (!result.data || Array.isArray(result.data)) {
-    throw new Error("The server did not return the booking.");
-  }
-
-  return result.data;
+  return requireBooking(result.data);
 }
 
 export async function getMyBookings(): Promise<Booking[]> {
   const result = await bookingRequest("/mine");
 
   return Array.isArray(result.data) ? result.data : [];
+}
+
+export async function getOwnerBookings(): Promise<Booking[]> {
+  const result = await bookingRequest("/owner");
+
+  return Array.isArray(result.data) ? result.data : [];
+}
+
+export async function confirmBooking(id: string): Promise<Booking> {
+  const result = await bookingRequest(`/${encodeURIComponent(id)}/confirm`, {
+    method: "PATCH",
+  });
+
+  return requireBooking(result.data);
+}
+
+export async function rejectBooking(id: string): Promise<void> {
+  await bookingRequest(`/${encodeURIComponent(id)}/reject`, {
+    method: "PATCH",
+  });
 }
 
 export async function cancelBooking(id: string): Promise<void> {

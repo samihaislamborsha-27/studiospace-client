@@ -1,0 +1,621 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  BadgeCheck,
+  Check,
+  Clock3,
+  ImageOff,
+  Mail,
+  MapPin,
+  ShieldCheck,
+  Star,
+  Users,
+  Wifi,
+} from "lucide-react";
+
+import { toast } from "sonner";
+import { getStudioById } from "@/services/studioService";
+import type { Studio } from "@/lib/studios";
+
+function formatPrice(value: number) {
+  return `৳${value.toLocaleString("en-BD")}`;
+}
+
+function getInitials(name?: string) {
+  if (!name?.trim()) return "SO";
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function LoadingState() {
+  return (
+    <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10">
+      <div className="mb-8 h-5 w-36 animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+
+      <div className="grid gap-10 lg:grid-cols-[1fr_360px]">
+        <div>
+          <div className="aspect-video w-full animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+          <div className="mt-8 h-8 w-2/3 animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+          <div className="mt-4 h-4 w-1/3 animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+
+          <div className="mt-10 space-y-3">
+            <div className="h-4 w-full animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+            <div className="h-4 w-full animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+            <div className="h-4 w-4/5 animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+          </div>
+        </div>
+
+        <div className="h-80 animate-pulse bg-[#233b35]/10 dark:bg-white/10" />
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="mx-auto flex min-h-[65vh] max-w-xl flex-col items-center justify-center px-5 text-center">
+      <div className="flex h-16 w-16 items-center justify-center border border-[#233b35]/10 bg-[#f5f1ea] text-[#a45d42] dark:border-white/10 dark:bg-white/5]">
+        <ImageOff className="h-7 w-7" />
+      </div>
+
+      <h1 className="mt-6 font-serif text-3xl text-[#233b35] dark:text-[#f5f1ea] sm:text-4xl">
+        {title}
+      </h1>
+
+      <p className="mt-3 max-w-md text-sm leading-7 text-[#66736d] dark:text-[#b3beb8]">
+        {description}
+      </p>
+
+      <Link
+        href="/studios"
+        className="mt-7 inline-flex items-center gap-2 bg-[#233b35] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#344f46] dark:bg-[#f5f1ea] dark:text-[#233b35] dark:hover:bg-white"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Explore studios
+      </Link>
+    </div>
+  );
+}
+
+function StudioDetailsContent() {
+  const params = useParams<{ id: string }>();
+  const studioId = params?.id;
+
+  const [studio, setStudio] = useState<Studio | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadStudio() {
+      if (!studioId) {
+        setLoading(false);
+        setError("The studio could not be identified.");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const result = await getStudioById(studioId);
+
+        if (!isMounted) return;
+
+        if (!result) {
+          setStudio(null);
+          setError("This studio may have been removed or is no longer available.");
+          return;
+        }
+
+        setStudio(result);
+      } catch (err) {
+        if (!isMounted) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong while loading this studio."
+        );
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadStudio();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [studioId]);
+
+  if (loading) {
+    return <LoadingState />;
+  }
+
+  if (error || !studio) {
+    return (
+      <EmptyState
+        title="Studio not found"
+        description={
+          error ||
+          "We couldn't find the studio you're looking for. It may no longer be available."
+        }
+      />
+    );
+  }
+
+  const ownerName = studio.ownerName?.trim() || "Studio owner";
+  const hasOwnerEmail = Boolean(studio.ownerEmail?.trim());
+
+  return (
+    <div className="min-h-screen bg-[#fbfaf7] pb-16 dark:bg-[#111a17]">
+      <div className="mx-auto w-full max-w-7xl px-5 pt-7 sm:px-8 sm:pt-10 lg:px-10">
+        {/* Breadcrumb */}
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+          <Link
+            href="/studios"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#66736d] transition hover:text-[#a45d42] dark:text-[#b3beb8] dark:hover:text-[#d59a7d]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to studios
+          </Link>
+
+          <div className="flex items-center gap-2 text-xs text-[#87928c] dark:text-[#8d9b94]">
+            <Link href="/" className="transition hover:text-[#a45d42]">
+              Home
+            </Link>
+            <span>/</span>
+            <Link href="/studios" className="transition hover:text-[#a45d42]">
+              Studios
+            </Link>
+            <span>/</span>
+            <span className="max-w-32 truncate text-[#233b35] dark:text-[#f5f1ea]">
+              {studio.title}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12">
+          {/* Main content */}
+          <div className="min-w-0">
+            {/* Main image */}
+            <div className="group relative aspect-16/10 overflow-hidden bg-[#e5e0d7] dark:bg-white/10 sm:aspect-video">
+              {studio.image ? (
+                <Image
+                  src={studio.image}
+                  alt={studio.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 70vw"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-[#66736d] dark:text-[#b3beb8]">
+                  <div className="text-center">
+                    <ImageOff className="mx-auto h-9 w-9" />
+                    <p className="mt-3 text-sm">Studio image unavailable</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/5" />
+
+              {studio.featured && (
+                <span className="absolute left-5 top-5 inline-flex items-center gap-2 bg-[#f5f1ea] px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#233b35]">
+                  <Star className="h-3.5 w-3.5 fill-[#a45d42] text-[#a45d42]" />
+                  Featured studio
+                </span>
+              )}
+
+              <span className="absolute bottom-5 left-5 bg-[#233b35] px-4 py-2 text-xs font-medium text-white">
+                {studio.category}
+              </span>
+            </div>
+
+            {/* Title and basic information */}
+            <div className="border-b border-[#233b35]/10 py-7 dark:border-white/10 sm:py-9">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-[#66736d] dark:text-[#b3beb8]">
+                <span className="inline-flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-[#a45d42]" />
+                  {studio.location}
+                </span>
+
+                <span className="inline-flex items-center gap-2">
+                  <Star className="h-4 w-4 fill-[#a45d42] text-[#a45d42]" />
+                  {studio.rating > 0
+                    ? studio.rating.toFixed(1)
+                    : "New listing"}
+                  {studio.reviewCount > 0 &&
+                    ` · ${studio.reviewCount} reviews`}
+                </span>
+              </div>
+
+              <h1 className="mt-5 max-w-3xl font-serif text-3xl leading-tight text-[#233b35] dark:text-[#f5f1ea] sm:text-4xl lg:text-5xl">
+                {studio.title}
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[#66736d] dark:text-[#b3beb8]">
+                A creative space designed to help you bring your next idea to
+                life.
+              </p>
+            </div>
+
+            {/* Studio highlights */}
+            <div className="grid grid-cols-2 gap-4 border-b border-[#233b35]/10 py-7 dark:border-white/10 sm:grid-cols-3 sm:gap-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#f1eae1] text-[#a45d42] dark:bg-white/6">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-[#87928c] dark:text-[#8d9b94]">
+                    Capacity
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    Up to {studio.capacity} people
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#f1eae1] text-[#a45d42] dark:bg-white/6">
+                  <Clock3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-[#87928c] dark:text-[#8d9b94]">
+                    Booking rate
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    Hourly rental
+                  </p>
+                </div>
+              </div>
+
+              <div className="col-span-2 flex items-start gap-3 sm:col-span-1">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#f1eae1] text-[#a45d42] dark:bg-white/6">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-[#87928c] dark:text-[#8d9b94]">
+                    Listing status
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    {studio.status || "Available"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Overview */}
+            <section className="border-b border-[#233b35]/10 py-8 dark:border-white/10 sm:py-10">
+              <div className="mb-5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
+                  The space
+                </p>
+                <h2 className="mt-2 font-serif text-2xl text-[#233b35] dark:text-[#f5f1ea] sm:text-3xl">
+                  About this studio
+                </h2>
+              </div>
+
+              <div className="whitespace-pre-line text-sm leading-8 text-[#66736d] dark:text-[#b3beb8] sm:text-base">
+                {studio.overview?.trim() ||
+                  "The studio owner has not added a description yet."}
+              </div>
+            </section>
+
+            {/* Amenities */}
+            <section className="border-b border-[#233b35]/10 py-8 dark:border-white/10 sm:py-10">
+              <div className="mb-6">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
+                  What's included
+                </p>
+                <h2 className="mt-2 font-serif text-2xl text-[#233b35] dark:text-[#f5f1ea] sm:text-3xl">
+                  Studio amenities
+                </h2>
+              </div>
+
+              {studio.amenities.length > 0 ? (
+                <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+                  {studio.amenities.map((amenity) => (
+                    <div
+                      key={amenity}
+                      className="flex items-center gap-3 text-sm text-[#66736d] dark:text-[#b3beb8]"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-[#e9f0eb] text-[#557564] dark:bg-white/[0.07] dark:text-[#a9c8b6]">
+                        <Check className="h-3.5 w-3.5" />
+                      </span>
+                      {amenity}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm leading-7 text-[#66736d] dark:text-[#b3beb8]">
+                  No amenities have been listed for this studio yet.
+                </p>
+              )}
+            </section>
+
+            {/* Owner */}
+            <section className="py-8 sm:py-10">
+              <div className="mb-6">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
+                  Your host
+                </p>
+                <h2 className="mt-2 font-serif text-2xl text-[#233b35] dark:text-[#f5f1ea] sm:text-3xl">
+                  Meet the studio owner
+                </h2>
+              </div>
+
+              <div className="flex flex-col gap-5 border border-[#233b35]/10 bg-white/60 p-5 dark:border-white/10 dark:bg-white/2.5 sm:flex-row sm:items-center sm:p-6">
+                <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#e9e3d9] text-lg font-semibold text-[#233b35] dark:bg-white/10 dark:text-[#f5f1ea]">
+                  {studio.ownerPhotoURL ? (
+                    <Image
+                      src={studio.ownerPhotoURL}
+                      alt={ownerName}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    getInitials(ownerName)
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                      {ownerName}
+                    </h3>
+                    <BadgeCheck className="h-4 w-4 text-[#a45d42]" />
+                  </div>
+
+                  <p className="mt-1 text-sm text-[#66736d] dark:text-[#b3beb8]">
+                    Studio owner
+                  </p>
+
+                  {hasOwnerEmail && (
+                    <p className="mt-2 break-all text-xs text-[#87928c] dark:text-[#8d9b94]">
+                      {studio.ownerEmail}
+                    </p>
+                  )}
+                </div>
+
+                {hasOwnerEmail && (
+                  <a
+                    href={`mailto:${studio.ownerEmail}?subject=${encodeURIComponent(
+                      `Inquiry about ${studio.title}`
+                    )}`}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 border border-[#233b35]/15 px-4 py-3 text-sm font-semibold text-[#233b35] transition hover:border-[#a45d42] hover:text-[#a45d42] dark:border-white/15 dark:text-[#f5f1ea] dark:hover:border-[#d59a7d] dark:hover:text-[#d59a7d]"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Contact owner
+                  </a>
+                )}
+              </div>
+            </section>
+          </div>
+
+          {/* Pricing sidebar */}
+          <aside className="lg:sticky lg:top-8">
+            <div className="border border-[#233b35]/10 bg-white p-6 dark:border-white/10 dark:bg-[#18231f] sm:p-7">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
+                Rental information
+              </p>
+
+              <div className="mt-4 border-b border-[#233b35]/10 pb-6 dark:border-white/10">
+                <p className="text-sm text-[#87928c] dark:text-[#8d9b94]">
+                  Starting from
+                </p>
+
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="font-serif text-4xl text-[#233b35] dark:text-[#f5f1ea]">
+                    {formatPrice(studio.hourlyRate)}
+                  </span>
+                  <span className="text-sm text-[#66736d] dark:text-[#b3beb8]">
+                    / hour
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-5 py-6">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[#66736d] dark:text-[#b3beb8]">
+                    Hourly rental
+                  </span>
+                  <span className="text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    {formatPrice(studio.hourlyRate)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[#66736d] dark:text-[#b3beb8]">
+                    Security deposit
+                  </span>
+                  <span className="text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    {formatPrice(studio.securityDeposit)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[#66736d] dark:text-[#b3beb8]">
+                    Capacity
+                  </span>
+                  <span className="text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                    {studio.capacity} people
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[#66736d] dark:text-[#b3beb8]">
+                    Availability
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#557564] dark:text-[#a9c8b6]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#6c9b79]" />
+                    {studio.status || "Available"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-[#233b35]/10 pt-6 dark:border-white/10">
+                {hasOwnerEmail ? (
+                  <a
+                    href={`mailto:${studio.ownerEmail}?subject=${encodeURIComponent(
+                      `Booking inquiry: ${studio.title}`
+                    )}`}
+                    className="flex w-full items-center justify-center gap-2 bg-[#233b35] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#344f46] dark:bg-[#f5f1ea] dark:text-[#233b35] dark:hover:bg-white"
+                  >
+                    Contact studio owner
+                    <ArrowUpRight className="h-4 w-4" />
+                  </a>
+                ) : (
+                  <div className="bg-[#f5f1ea] px-4 py-4 text-center text-sm text-[#66736d] dark:bg-white/6 dark:text-[#b3beb8]">
+                    Owner contact information is unavailable.
+                  </div>
+                )}
+
+                <p className="mt-4 text-center text-xs leading-6 text-[#87928c] dark:text-[#8d9b94]">
+                  Contact the owner to discuss availability, booking details
+                  and studio requirements.
+                </p>
+              </div>
+            </div>
+
+            {/* Trust note */}
+            <div className="mt-5 flex gap-3 border border-[#233b35]/10 px-5 py-5 dark:border-white/10">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#a45d42]" />
+              <div>
+                <p className="text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                  Plan with confidence
+                </p>
+                <p className="mt-1 text-xs leading-6 text-[#66736d] dark:text-[#b3beb8]">
+                  Confirm rental terms, availability and deposit details with
+                  the studio owner before arranging your visit.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        {/* Contact owner dialog */}
+        {contactOpen && hasOwnerEmail && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#101713]/65 p-4 backdrop-blur-sm"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setContactOpen(false);
+              }
+            }}
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="contact-dialog-title"
+              className="relative w-full max-w-md border border-[#e7e0d6] bg-white p-6 shadow-2xl dark:border-white/10 dark:bg-[#222724] sm:p-8"
+            >
+              <button
+                type="button"
+                onClick={() => setContactOpen(false)}
+                aria-label="Close contact dialog"
+                className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center text-[#52615a] transition hover:bg-[#f1eee8] hover:text-[#233b35] dark:text-[#b3beb8] dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex h-12 w-12 items-center justify-center bg-[#f1eae1] text-[#a45d42] dark:bg-white/10 dark:text-[#d59a7e]">
+                <Mail className="h-5 w-5" />
+              </div>
+
+              <p className="mt-6 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
+                Get in touch
+              </p>
+
+              <h2
+                id="contact-dialog-title"
+                className="mt-2 font-serif text-2xl text-[#233b35] dark:text-[#f5f1ea]"
+              >
+                Contact {ownerName}
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-[#52615a] dark:text-[#b3beb8]">
+                Use the email address below to discuss this studio, availability
+                and booking arrangements.
+              </p>
+
+              <div className="mt-6 border border-[#e5e9e5] bg-[#f8f7f4] p-4 dark:border-white/10 dark:bg-white/5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#66736d] dark:text-[#9aa79f]">
+                  Owner email address
+                </p>
+
+                <p className="mt-2 break-all text-sm font-semibold text-[#233b35] dark:text-[#f5f1ea]">
+                  {studio.ownerEmail}
+                </p>
+              </div>
+
+              <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setContactOpen(false)}
+                  className="flex-1 border border-[#dce3de] px-4 py-3 text-sm font-semibold text-[#52615a] transition hover:bg-[#f5f7f4] dark:border-white/15 dark:text-[#d0d9d3] dark:hover:bg-white/5"
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyEmail}
+                  className="flex flex-1 items-center justify-center gap-2 bg-[#233b35] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#344f46] dark:bg-[#e8eee9] dark:text-[#233b35] dark:hover:bg-white"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy email
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* Bottom navigation */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#233b35]/10 pt-6 dark:border-white/10">
+          <p className="text-sm text-[#66736d] dark:text-[#b3beb8]">
+            Looking for another creative space?
+          </p>
+
+          <Link
+            href="/studios"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-[#a45d42] transition hover:gap-3"
+          >
+            Explore more studios
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function StudioDetailsPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <StudioDetailsContent />
+    </Suspense>
+  );
+}

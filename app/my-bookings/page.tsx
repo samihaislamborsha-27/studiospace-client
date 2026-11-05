@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -46,6 +46,7 @@ const statusStyles: Record<BookingStatus, string> = {
   Confirmed: "bg-[#eaf5ed] text-[#347149] border-[#d0e7d6]",
   Completed: "bg-[#edf1f7] text-[#536b8c] border-[#dce4ef]",
   Cancelled: "bg-[#fceeed] text-[#a34c43] border-[#f0d7d3]",
+  Rejected: "bg-[#fceeed] text-[#a34c43] border-[#f0d7d3]",
 };
 
 export default function MyBookingsPage() {
@@ -288,7 +289,7 @@ export default function MyBookingsPage() {
                         <div>
                           <p className="text-xs text-[#929d95]">Schedule</p>
                           <p className="mt-0.5 text-sm font-medium text-[#4b5d50]">
-                            {booking.startTime} · {booking.duration}{" "}
+                            {booking.startTime} Â· {booking.duration}{" "}
                             {booking.duration === 1 ? "hour" : "hours"}
                           </p>
                         </div>
