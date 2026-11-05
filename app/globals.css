@@ -83,3 +83,14 @@ img {
   color: #ffffff;
 }
 
+
+
+/* ACCESSIBILITY FOCUS IMPROVEMENT */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
