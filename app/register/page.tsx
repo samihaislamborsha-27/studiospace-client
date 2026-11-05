@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,19 +9,26 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  ImagePlus,
   LoaderCircle,
   LockKeyhole,
   Mail,
   UserRound,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  registerUser,
-  uploadProfileImage,
-} from "@/services/auth";
+import { registerUser } from "@/services/auth";
+
+function isValidJpgUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (
+      (url.protocol === "https:" || url.protocol === "http:") &&
+      /\.(jpe?g)$/i.test(url.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
 
 function getSafeRedirect(): string {
   const requestedPath = new URLSearchParams(window.location.search).get("next");
@@ -41,15 +48,13 @@ function getSafeRedirect(): string {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewURL, setPreviewURL] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginHref, setLoginHref] = useState("/login");
 
@@ -66,50 +71,6 @@ export default function RegisterPage() {
       setLoginHref(`/login?next=${encodeURIComponent(next)}`);
     }
   }, []);
-
-  useEffect(() => {
-    if (!selectedImage) {
-      setPreviewURL("");
-      return;
-    }
-
-    const objectURL = URL.createObjectURL(selectedImage);
-    setPreviewURL(objectURL);
-
-    return () => URL.revokeObjectURL(objectURL);
-  }, [selectedImage]);
-
-  const handleImageChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
-
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Please select a JPG, PNG, or WebP image.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Your profile image must be smaller than 5 MB.");
-      event.target.value = "";
-      return;
-    }
-
-    setSelectedImage(file);
-  };
-
-  const removeImage = () => {
-    setSelectedImage(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -142,27 +103,16 @@ export default function RegisterPage() {
     try {
       setLoading(true);
 
-      let photoURL = "";
-
-      if (selectedImage) {
-        try {
-          toast.info("Uploading your profile photo...");
-          photoURL = await uploadProfileImage(selectedImage);
-        } catch (uploadError) {
-          console.error("Profile photo upload failed:", uploadError);
-
-          photoURL = "";
-
-          toast.warning(
-            "Your photo couldn't be uploaded. Your account will be created without it."
-          );
-        }
+      if (photoURL.trim() && !isValidJpgUrl(photoURL)) {
+        toast.error("Please enter a direct JPG or JPEG image URL.");
+        setLoading(false);
+        return;
       }
 
       await registerUser({
         name: trimmedName,
         email: trimmedEmail,
-        photoURL,
+        photoURL: photoURL.trim(),
         password,
       });
 
@@ -264,61 +214,30 @@ export default function RegisterPage() {
                   </span>
                 </label>
 
-                <div className="flex items-center gap-4">
-                  <div className="relative flex h-19 w-19 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#E7E0D6] bg-[#F5F1EA]">
-                    {previewURL ? (
+                <div className="space-y-3">
+                  <input
+                    id="register-photo-url"
+                    type="url"
+                    value={photoURL}
+                    onChange={(event) => setPhotoURL(event.target.value)}
+                    placeholder="https://example.com/profile.jpg"
+                    className="h-12 w-full rounded-xl border border-[#E7E0D6] bg-white px-4 text-sm text-[#282725] outline-none transition placeholder:text-[#AAA49B] focus:border-[#A45D42] focus:ring-2 focus:ring-[#A45D42]/10"
+                  />
+                  <p className="text-xs leading-5 text-[#99938A]">
+                    Optional. Paste a direct JPG or JPEG image URL.
+                  </p>
+                  {photoURL.trim() && isValidJpgUrl(photoURL) && (
+                    <div className="relative h-20 w-20 overflow-hidden rounded-full border border-[#E7E0D6]">
                       <Image
-                        src={previewURL}
+                        src={photoURL.trim()}
                         alt="Profile photo preview"
                         fill
                         unoptimized
                         className="object-cover"
-                        sizes="76px"
+                        sizes="80px"
                       />
-                    ) : (
-                      <UserRound size={30} className="text-[#A69D91]" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-lg border border-[#D9C9B5] px-4 py-2.5 text-sm font-medium text-[#233B35] transition hover:border-[#A45D42] hover:bg-[#F9F5EF]"
-                    >
-                      <ImagePlus size={16} />
-                      {selectedImage ? "Change photo" : "Choose photo"}
-                    </button>
-
-                    <p className="mt-2 text-xs leading-5 text-[#99938A]">
-                      JPG, PNG or WebP · Maximum 5 MB
-                    </p>
-
-                    {selectedImage && (
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="max-w-45 truncate text-xs text-[#47735C]">
-                          {selectedImage.name}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          aria-label="Remove selected photo"
-                          className="rounded-full p-1 text-[#A45D42] transition hover:bg-[#F5EAE5]"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -453,3 +372,6 @@ export default function RegisterPage() {
     </main>
   );
 }
+
+
+

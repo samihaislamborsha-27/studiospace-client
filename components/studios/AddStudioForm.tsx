@@ -1,24 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  ImagePlus,
-  LoaderCircle,
-  MapPin,
-  Plus,
-  Trash2,
-  UploadCloud,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, LoaderCircle, MapPin, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/context/AuthProvider";
-import { uploadProfileImage } from "@/services/auth";
 import { createStudio } from "@/services/studioService";
 import { studioCategories } from "@/lib/studios";
 
@@ -72,18 +60,28 @@ const labelClass =
 
 const errorClass = "mt-2 text-xs font-medium text-red-600 dark:text-red-400";
 
+function isValidJpgUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (
+      (url.protocol === "https:" || url.protocol === "http:") &&
+      /\.(jpe?g)$/i.test(url.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default function AddStudioForm() {
   const router = useRouter();
   const { user } = useAuth();
 
   const formRef = useRef<HTMLFormElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [amenities, setAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [imageURL, setImageURL] = useState("");
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -119,48 +117,6 @@ export default function AddStudioForm() {
 
     setAmenities((current) => [...current, value]);
     setCustomAmenity("");
-  };
-
-  const selectImage = (file?: File) => {
-    if (!file) return;
-
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast.error("Choose a JPG, PNG, or WebP image.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be 5 MB or less.");
-      return;
-    }
-
-    setImageFile(file);
-    setErrors((current) => {
-      const updated = { ...current };
-      delete updated.image;
-      return updated;
-    });
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      setImagePreview(String(reader.result ?? ""));
-    };
-
-    reader.onerror = () => {
-      toast.error("Unable to preview this image. Please choose another one.");
-    };
-
-    reader.readAsDataURL(file);
-  };
-
-  const removeImage = () => {
-    setImageFile(null);
-    setImagePreview("");
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   };
 
   const validateForm = (): boolean => {
@@ -215,8 +171,8 @@ export default function AddStudioForm() {
         "Studio overview must contain at least 30 characters.";
     }
 
-    if (!imageFile) {
-      nextErrors.image = "Please upload a studio cover image.";
+    if (!isValidJpgUrl(imageURL)) {
+      nextErrors.image = "Please enter a direct JPG or JPEG image URL.";
     }
 
     setErrors(nextErrors);
@@ -254,16 +210,9 @@ export default function AddStudioForm() {
 
     if (!validateForm()) return;
 
-    if (!imageFile) return;
-
     setSaving(true);
 
     try {
-      const imageURL = await uploadProfileImage(imageFile);
-
-      if (!imageURL || typeof imageURL !== "string") {
-        throw new Error("Image upload failed. Please upload your image again.");
-      }
 
       const createdStudio = await createStudio({
         title: values.title.trim(),
@@ -272,7 +221,7 @@ export default function AddStudioForm() {
         hourlyRate: Number(values.hourlyRate),
         securityDeposit: Number(values.securityDeposit),
         capacity: Number(values.capacity),
-        image: imageURL,
+        image: imageURL.trim(),
         amenities,
         overview: values.overview.trim(),
       });
@@ -553,7 +502,7 @@ export default function AddStudioForm() {
         <div className="grid gap-5 sm:grid-cols-3">
           <div data-field="hourlyRate">
             <label className={labelClass} htmlFor="hourly-rate">
-              Hourly rate (৳) *
+              Hourly rate (à§³) *
             </label>
             <input
               id="hourly-rate"
@@ -582,7 +531,7 @@ export default function AddStudioForm() {
 
           <div data-field="securityDeposit">
             <label className={labelClass} htmlFor="security-deposit">
-              Security deposit (৳)
+              Security deposit (à§³)
             </label>
             <input
               id="security-deposit"
@@ -656,79 +605,40 @@ export default function AddStudioForm() {
           </p>
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          name="image"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(event) => selectImage(event.target.files?.[0])}
-        />
-
         <div data-field="image">
-          {imagePreview ? (
-            <div className="relative overflow-hidden rounded-xl border border-[#233b35]/10 dark:border-white/10">
-              <div className="relative aspect-16/8 w-full">
-                <Image
-                  src={imagePreview}
-                  alt="Studio cover preview"
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-3 p-4">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {imageFile?.name}
-                  </p>
-                  <p className="mt-1 text-xs text-[#66736d] dark:text-[#b3beb8]">
-                    {imageFile
-                      ? `${(imageFile.size / 1024 / 1024).toFixed(2)} MB`
-                      : ""}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-red-500/20 px-3 py-2 text-xs text-red-600 hover:bg-red-500/5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Remove
-                </button>
-              </div>
+          <label htmlFor="studio-image-url" className={labelClass}>
+            Direct JPG/JPEG image URL
+          </label>
+          <input
+            id="studio-image-url"
+            type="url"
+            value={imageURL}
+            onChange={(event) => {
+              setImageURL(event.target.value);
+              setErrors((current) => {
+                const updated = { ...current };
+                delete updated.image;
+                return updated;
+              });
+            }}
+            placeholder="https://example.com/studio-photo.jpg"
+            className={inputClass}
+          />
+          <p className="mt-2 text-xs text-[#66736d] dark:text-[#b3beb8]">
+            Paste a direct link ending in .jpg or .jpeg. The image must be publicly accessible.
+          </p>
+          {isValidJpgUrl(imageURL) && (
+            <div className="relative mt-4 aspect-16/8 w-full overflow-hidden rounded-xl border border-[#233b35]/10 dark:border-white/10">
+              <Image
+                src={imageURL.trim()}
+                alt="Studio cover preview"
+                fill
+                unoptimized
+                className="object-cover"
+              />
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex min-h-52 w-full flex-col items-center justify-center rounded-xl border border-dashed bg-white/40 px-5 py-8 text-center transition hover:border-[#a45d42] hover:bg-[#a45d42]/5 dark:bg-white/2 ${
-                errors.image
-                  ? "border-red-500"
-                  : "border-[#233b35]/25 dark:border-white/20"
-              }`}
-            >
-              <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#a45d42]/10 text-[#a45d42]">
-                <ImagePlus className="h-6 w-6" />
-              </span>
-              <span className="text-sm font-semibold">
-                Upload studio image
-              </span>
-              <span className="mt-2 text-xs text-[#66736d] dark:text-[#b3beb8]">
-                Browse your device or choose a different image
-              </span>
-              <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#a45d42]">
-                <UploadCloud className="h-4 w-4" />
-                Choose image
-              </span>
-            </button>
           )}
-
-          {errors.image && (
-            <p className={errorClass}>{errors.image}</p>
-          )}
+          {errors.image && <p className={errorClass}>{errors.image}</p>}
         </div>
       </section>
 

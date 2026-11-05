@@ -101,40 +101,6 @@ export async function updateProfile(
   return parseResponse<AuthResponse>(response);
 }
 
-export async function uploadProfileImage(file: File): Promise<string> {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-    throw new Error("Please select a JPG, PNG, or WebP image.");
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Your image must be smaller than 5 MB.");
-  }
-
-  const formData = new FormData();
-  formData.append("image", file);
-
-  let response: Response;
-
-  try {
-    response = await fetch(`${API_URL}/api/uploads/profile-image`, {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-      body: formData,
-    });
-  } catch {
-    throw new Error("Unable to connect to the image upload service.");
-  }
-
-  const result = await parseResponse<{ imageURL: string }>(response);
-
-  if (!result.imageURL) {
-    throw new Error("The image service did not return an image URL.");
-  }
-
-  return result.imageURL;
-}
-
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
     const response = await fetch(`${API_URL}/api/auth/me`, {

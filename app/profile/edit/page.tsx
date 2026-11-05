@@ -1,18 +1,11 @@
-"use client";
+﻿"use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Camera,
   Check,
   ImagePlus,
   LoaderCircle,
@@ -27,19 +20,28 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthProvider";
 import {
   updateProfile,
-  uploadProfileImage,
 } from "@/services/auth";
+
+function isValidJpgUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return (
+      (url.protocol === "https:" || url.protocol === "http:") &&
+      /\.(jpe?g)$/i.test(url.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export default function EditProfilePage() {
   const router = useRouter();
   const { user, loading, setUser } = useAuth();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [photoURL, setPhotoURL] = useState("");
   const [previewURL, setPreviewURL] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -56,74 +58,25 @@ export default function EditProfilePage() {
     }
   }, [user]);
 
-  function handleImageSelect(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast.error("Please select a JPG, PNG, or WebP image.");
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Your image must be smaller than 5 MB.");
-      event.target.value = "";
-      return;
-    }
-
-    const localPreview = URL.createObjectURL(file);
-    setPreviewURL(localPreview);
-
-    void handleUpload(file);
-  }
-
-  async function handleUpload(file: File) {
-    try {
-      setUploading(true);
-
-      const uploadedURL = await uploadProfileImage(file);
-
-      setPhotoURL(uploadedURL);
-      setPreviewURL(uploadedURL);
-
-      toast.success("Profile picture uploaded.");
-    } catch (error) {
-      setPreviewURL(photoURL);
-
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to upload your profile picture."
-      );
-    } finally {
-      setUploading(false);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  }
-
   function removePhoto() {
     setPhotoURL("");
     setPreviewURL("");
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!user || saving || uploading) return;
+    if (!user || saving) return;
 
     const cleanName = name.trim();
 
     if (cleanName.length < 2 || cleanName.length > 80) {
       toast.error("Name must contain between 2 and 80 characters.");
+      return;
+    }
+
+    if (photoURL.trim() && !isValidJpgUrl(photoURL)) {
+      toast.error("Please enter a direct JPG or JPEG image URL.");
       return;
     }
 
@@ -313,12 +266,6 @@ export default function EditProfilePage() {
                       {initials || <UserRound size={42} />}
                     </span>
                   )}
-
-                  {uploading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
-                      <LoaderCircle size={28} className="animate-spin" />
-                    </div>
-                  )}
                 </div>
 
                 <p className="mt-4 text-sm font-semibold text-[#282725] dark:text-[#f3f0e9]">
@@ -330,34 +277,29 @@ export default function EditProfilePage() {
                 </p>
               </div>
 
+              <label
+                htmlFor="profile-photo-url"
+                className="mt-7 mb-2 block text-sm font-medium text-[#403d38] dark:text-[#e5e1d8]"
+              >
+                Direct JPG/JPEG image URL
+              </label>
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={handleImageSelect}
-                className="hidden"
+                id="profile-photo-url"
+                type="url"
+                value={photoURL}
+                onChange={(event) => {
+                  setPhotoURL(event.target.value);
+                  setPreviewURL(event.target.value);
+                }}
+                placeholder="https://example.com/profile.jpg"
+                className="w-full rounded-xl border border-[#e7e0d6] bg-white px-4 py-3 text-sm text-[#403d38] outline-none transition focus:border-[#8f4933] dark:border-[#485149] dark:bg-[#202622] dark:text-[#f3f0e9]"
               />
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl border border-[#e7e0d6] px-4 py-3 text-sm font-semibold text-[#403d38] transition hover:border-[#c9a18e] hover:bg-[#fcfbf9] disabled:cursor-wait disabled:opacity-60 dark:border-[#485149] dark:text-[#e5e1d8] dark:hover:bg-[#2b312d]"
-              >
-                {uploading ? (
-                  <LoaderCircle size={17} className="animate-spin" />
-                ) : (
-                  <Camera size={17} />
-                )}
-                {uploading ? "Uploading..." : "Choose a picture"}
-              </button>
-
-              {previewURL && (
+              {previewURL && isValidJpgUrl(previewURL) && (
                 <button
                   type="button"
                   onClick={removePhoto}
-                  disabled={uploading}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-[#a45d42] transition hover:bg-[#f9eee9] disabled:opacity-50 dark:text-[#d59a7e] dark:hover:bg-[#3a2d29]"
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-[#a45d42] transition hover:bg-[#f9eee9] dark:text-[#d59a7e] dark:hover:bg-[#3a2d29]"
                 >
                   <X size={16} />
                   Remove picture
@@ -371,7 +313,7 @@ export default function EditProfilePage() {
                     className="mt-0.5 shrink-0 text-[#8f4933] dark:text-[#d59a7e]"
                   />
                   <p className="text-xs leading-5 text-[#77736d] dark:text-[#aaa99f]">
-                    JPG, PNG or WebP. Maximum file size: 5 MB.
+                    Paste a publicly accessible direct JPG or JPEG image URL. Leave blank to remove your picture.
                   </p>
                 </div>
               </div>
@@ -389,7 +331,7 @@ export default function EditProfilePage() {
 
             <button
               type="submit"
-              disabled={saving || uploading}
+              disabled={saving}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#8f4933] px-7 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(143,73,51,0.16)] transition hover:bg-[#713824] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? (
@@ -406,3 +348,5 @@ export default function EditProfilePage() {
     </main>
   );
 }
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -19,7 +19,6 @@ import {
 import { toast } from "sonner";
 
 import { useAuth } from "@/context/AuthProvider";
-import { uploadProfileImage } from "@/services/auth";
 import {
   getStudioById,
   updateStudio,
@@ -43,6 +42,15 @@ const AMENITY_OPTIONS = [
   "Furniture",
   "Restroom",
 ];
+
+function isValidJpgUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) && /\.jpe?g$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
 
 type FormValues = {
   title: string;
@@ -85,13 +93,9 @@ function EditStudioContent() {
   const { user, loading: authLoading } = useAuth();
 
   const formRef = useRef<HTMLFormElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [amenities, setAmenities] = useState<string[]>([]);
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState("");
   const [existingImage, setExistingImage] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -206,59 +210,6 @@ function EditStudioContent() {
     setCustomAmenity("");
   };
 
-  const selectImage = (file?: File) => {
-    if (!file) return;
-
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      toast.error("Choose a JPG, PNG, or WebP image.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be 5 MB or less.");
-      return;
-    }
-
-    setImageFile(file);
-
-    setErrors((current) => {
-      const updated = { ...current };
-      delete updated.image;
-      return updated;
-    });
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      setImagePreview(String(reader.result ?? ""));
-    };
-
-    reader.onerror = () => {
-      toast.error("Unable to preview this image. Please choose another one.");
-    };
-
-    reader.readAsDataURL(file);
-  };
-
-  const removeNewImage = () => {
-    setImageFile(null);
-    setImagePreview("");
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const removeExistingImage = () => {
-    setExistingImage("");
-    setImagePreview("");
-    setImageFile(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const validateForm = (): boolean => {
     const nextErrors: FieldErrors = {};
 
@@ -313,9 +264,10 @@ function EditStudioContent() {
       nextErrors.overview =
         "Studio overview must contain at least 30 characters.";
     }
-
-    if (!imageFile && !existingImage) {
-      nextErrors.image = "Please upload a studio cover image.";
+    if (!existingImage.trim()) {
+      nextErrors.image = "Please enter a studio image URL.";
+    } else if (!isValidJpgUrl(existingImage.trim())) {
+      nextErrors.image = "Please enter a valid JPG or JPEG image URL.";
     }
 
     setErrors(nextErrors);
@@ -358,27 +310,6 @@ function EditStudioContent() {
     setSaving(true);
 
     try {
-      let imageURL = existingImage;
-
-      if (imageFile) {
-        const uploadedImage = await uploadProfileImage(imageFile);
-
-        if (
-          !uploadedImage ||
-          typeof uploadedImage !== "string"
-        ) {
-          throw new Error(
-            "Image upload failed. Please upload your image again."
-          );
-        }
-
-        imageURL = uploadedImage;
-      }
-
-      if (!imageURL) {
-        throw new Error("Please select a studio cover image.");
-      }
-
       const updatedStudio = await updateStudio(studioId, {
         title: values.title.trim(),
         category: values.category,
@@ -386,7 +317,7 @@ function EditStudioContent() {
         hourlyRate: Number(values.hourlyRate),
         securityDeposit: Number(values.securityDeposit),
         capacity: Number(values.capacity),
-        image: imageURL,
+        image: existingImage.trim(),
         amenities,
         overview: values.overview.trim(),
       });
@@ -469,7 +400,7 @@ function EditStudioContent() {
     );
   }
 
-  const displayedImage = imagePreview || existingImage;
+  const displayedImage = existingImage;
 
   return (
     <main className="min-h-screen bg-[#f5f1ea] px-5 py-12 text-[#233b35] dark:bg-[#171d19] dark:text-[#f5f1ea] sm:py-16">
@@ -761,7 +692,7 @@ function EditStudioContent() {
             <div className="grid gap-5 sm:grid-cols-3">
               <div data-field="hourlyRate">
                 <label className={labelClass} htmlFor="hourly-rate">
-                  Hourly rate (৳) *
+                  Hourly rate (à§³) *
                 </label>
 
                 <input
@@ -787,7 +718,7 @@ function EditStudioContent() {
 
               <div data-field="securityDeposit">
                 <label className={labelClass} htmlFor="security-deposit">
-                  Security deposit (৳)
+                  Security deposit (à§³)
                 </label>
 
                 <input
@@ -849,117 +780,48 @@ function EditStudioContent() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
                 04 / Cover image
               </p>
-
               <h2 className="mt-2 font-serif text-2xl sm:text-3xl">
-                Make a strong first impression
+                Add your studio image URL
               </h2>
-
               <p className="mt-2 text-sm text-[#66736d] dark:text-[#b3beb8]">
-                Keep your current photo or upload a replacement. JPG, PNG,
-                or WebP, up to 5 MB.
+                Enter a direct JPG or JPEG image URL.
               </p>
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              name="image"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={(event) =>
-                selectImage(event.target.files?.[0])
-              }
-            />
-
             <div data-field="image">
-              {displayedImage ? (
-                <div className="overflow-hidden rounded-xl border border-[#233b35]/10 dark:border-white/10">
-                  <div className="relative aspect-16/8 w-full">
-                    <Image
-                      src={displayedImage}
-                      alt="Studio cover preview"
-                      fill
-                      unoptimized
-                      className="object-cover"
-                    />
-                  </div>
-
-                  <div className="flex flex-col justify-between gap-3 p-4 sm:flex-row sm:items-center">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">
-                        {imageFile?.name ??
-                          (imagePreview
-                            ? "New studio image"
-                            : "Current studio cover image")}
-                      </p>
-
-                      <p className="mt-1 text-xs text-[#66736d] dark:text-[#b3beb8]">
-                        {imageFile
-                          ? `${(imageFile.size / 1024 / 1024).toFixed(2)} MB`
-                          : "Your current image is preserved unless replaced."}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#233b35]/15 px-3 py-2 text-xs font-medium transition hover:border-[#a45d42] dark:border-white/15"
-                      >
-                        <UploadCloud className="h-3.5 w-3.5" />
-                        Replace image
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={
-                          imageFile
-                            ? removeNewImage
-                            : removeExistingImage
-                        }
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/20 px-3 py-2 text-xs text-red-600 transition hover:bg-red-500/5"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
+              <label className={labelClass} htmlFor="studio-image">
+                Studio image URL *
+              </label>
+              <input
+                id="studio-image"
+                name="image"
+                type="url"
+                value={existingImage}
+                onChange={(event) => {
+                  setExistingImage(event.target.value);
+                  setErrors((current) => {
+                    const updated = { ...current };
+                    delete updated.image;
+                    return updated;
+                  });
+                }}
+                placeholder="https://example.com/studio.jpg"
+                className={`${inputClass} ${errors.image ? "border-red-500" : ""}`}
+              />
+              {errors.image && <p className={errorClass}>{errors.image}</p>}
+              {existingImage.trim() && isValidJpgUrl(existingImage.trim()) && (
+                <div className="relative mt-5 aspect-16/8 w-full overflow-hidden rounded-xl">
+                  <Image
+                    src={existingImage.trim()}
+                    alt="Studio cover preview"
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`flex min-h-52 w-full flex-col items-center justify-center rounded-xl border border-dashed bg-white/40 px-5 py-8 text-center transition hover:border-[#a45d42] hover:bg-[#a45d42]/5 dark:bg-white/2 ${
-                    errors.image
-                      ? "border-red-500"
-                      : "border-[#233b35]/25 dark:border-white/20"
-                  }`}
-                >
-                  <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#a45d42]/10 text-[#a45d42]">
-                    <ImagePlus className="h-6 w-6" />
-                  </span>
-
-                  <span className="text-sm font-semibold">
-                    Upload studio image
-                  </span>
-
-                  <span className="mt-2 text-xs text-[#66736d] dark:text-[#b3beb8]">
-                    Browse your device or choose an image
-                  </span>
-
-                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#a45d42]">
-                    <UploadCloud className="h-4 w-4" />
-                    Choose image
-                  </span>
-                </button>
-              )}
-
-              {errors.image && (
-                <p className={errorClass}>{errors.image}</p>
               )}
             </div>
           </section>
-
           {/* Host information */}
           <section className="pb-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a45d42]">
@@ -1041,3 +903,5 @@ export default function EditStudioPage() {
     </Suspense>
   );
 }
+
+
