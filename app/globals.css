@@ -1,4 +1,5 @@
 ﻿@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   color-scheme: light;
@@ -81,3 +82,4 @@ img {
   background: #a45d42;
   color: #ffffff;
 }
+
